@@ -23,6 +23,10 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Project specific
-*.xlsx
+# Project specific - 로그 및 리포트
+cando_auto_log.txt
+cando_auto_report_*.csv
+
+# 사용자 데이터 CSV (예시 파일은 제외)
 *.csv
+!example*.csv
