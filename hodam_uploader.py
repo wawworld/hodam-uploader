@@ -188,13 +188,17 @@ class CandoAutoCounseling:
             return False
 
     def input_counseling_data(self, row_data):
-        """상담 데이터 입력 - 최적화된 버전"""
+        """상담 데이터 입력"""
         try:
             iframe = self.page.frame_locator("iframe")
             
             # 상담입력 버튼 클릭
-            iframe.locator("text=상담입력").first.click()
-            time.sleep(3)
+            self.logger.info("🟡 상담입력 버튼 클릭 (goCounsel)")
+            iframe.locator('div[onclick="goCounsel()"]').click()
+            
+            # 상담입력 폼 대기
+            self.logger.info("🟡 상담입력 폼 대기")
+            iframe.locator("#Pdate").wait_for(state="visible", timeout=10000)
             
             # 기본 정보 입력
             self._input_basic_info(iframe, row_data)
@@ -202,47 +206,50 @@ class CandoAutoCounseling:
             # 상담 내용 입력
             self._input_counseling_content(iframe, row_data)
             
-            # 학생상태 입력
+            # 학생상태 입력 (기존 코드 유지)
             self._input_student_status(iframe, row_data)
             
-            # 전문상담의뢰 입력
+            # 전문상담의뢰 입력 (기존 코드 유지)
             self._input_referral_status(iframe, row_data)
             
-            # 비공개설정
+            # 비공개설정 (기존 코드 유지)
             self._set_privacy_option(iframe, row_data)
             
             self.logger.info(f"✅ 상담 데이터 입력 완료: {row_data['학번']}")
             return True
-                
+                    
         except Exception as e:
             self.logger.error(f"❌ 상담 데이터 입력 실패 ({row_data['학번']}): {str(e)}")
             return False
 
     def _input_basic_info(self, iframe, row_data):
         """기본 정보 입력 (날짜, 시간, 분야, 구분)"""
+        
         # 상담일자
         if '상담일자' in row_data and pd.notna(row_data['상담일자']):
+            self.logger.info("🟢 상담일자 입력")
             iframe.locator("#Pdate").fill(str(row_data['상담일자']).strip())
-            time.sleep(0.5)
         
         # 상담시간
-        all_inputs = iframe.locator("input[type='text']:visible")
-        if '상담시간_시' in row_data and pd.notna(row_data['상담시간_시']) and all_inputs.count() >= 2:
-            all_inputs.nth(1).fill(str(int(row_data['상담시간_시'])))
-            time.sleep(0.3)
+        if '상담시간_시' in row_data and pd.notna(row_data['상담시간_시']):
+            self.logger.info("🟢 상담시간 입력")
+            iframe.locator("input[name='Hour']").fill(str(int(row_data['상담시간_시'])))
         
-        if '상담시간_분' in row_data and pd.notna(row_data['상담시간_분']) and all_inputs.count() >= 3:
-            all_inputs.nth(2).fill(str(int(row_data['상담시간_분'])))
-            time.sleep(0.3)
+        if '상담시간_분' in row_data and pd.notna(row_data['상담시간_분']):
+            iframe.locator("input[name='Min']").fill(str(int(row_data['상담시간_분'])))
         
-        # 상담분야
+        # 상담분야 - label로 선택 (Node.js와 동일)
         if '상담분야' in row_data and pd.notna(row_data['상담분야']):
-            iframe.locator("#Cntype").select_option(str(row_data['상담분야']).strip())
-            time.sleep(0.5)
+            self.logger.info("🟢 상담분야 선택")
+            field = str(row_data['상담분야']).strip()
+            iframe.locator("#Cntype").select_option(label=field)
         
         # 상담구분 (개인/집단)
         if '상담구분' in row_data and pd.notna(row_data['상담구분']):
-            self._select_counseling_type(iframe, row_data['상담구분'])
+            self.logger.info("🟢 상담구분 선택")
+            is_group = str(row_data['상담구분']).strip() == '집단상담'
+            value = '2' if is_group else '1'
+            iframe.locator(f"label:has(input[name='CnPer'][value='{value}'])").click()
 
     def _select_counseling_type(self, iframe, counseling_type):
         """상담구분 선택 (개인상담/집단상담)"""
@@ -270,15 +277,15 @@ class CandoAutoCounseling:
 
     def _input_counseling_content(self, iframe, row_data):
         """상담 내용 입력"""
+        self.logger.info("🟢 제목/내용 입력")
+        
         # 제목
         if '제목' in row_data and pd.notna(row_data['제목']):
             iframe.locator("#Title").fill(str(row_data['제목']).strip())
-            time.sleep(0.5)
         
         # 상담내용
         if '상담내용' in row_data and pd.notna(row_data['상담내용']):
             iframe.locator("#Content").fill(str(row_data['상담내용']).strip())
-            time.sleep(0.5)
 
     def _input_student_status(self, iframe, row_data):
         """학생상태 입력"""
@@ -326,26 +333,65 @@ class CandoAutoCounseling:
             except Exception as e:
                 self.logger.warning(f"비공개설정 실패: {str(e)}")
                         
-    def save_counseling_data(self):
+    def save_counseling_data(self, row_data):
         """상담 데이터 저장"""
         try:
             iframe = self.page.frame_locator("iframe")
+            
+            self.logger.info("🟡 저장 버튼 클릭")
+            
+            # Dialog 자동 처리
+            def handle_dialog(dialog):
+                self.logger.info(f"🟠 dialog: {dialog.message}")
+                dialog.accept()
+            
+            self.page.once("dialog", handle_dialog)
+            
+            # 저장 버튼 클릭
             iframe.locator("#CounselInputBtn").click()
-            time.sleep(5)
             
-            # 저장 완료 확인
+            # 2.5초 대기
+            time.sleep(2.5)
+            
+            # 폼이 닫혔는지 확인
             try:
-                if not iframe.locator("#Pdate").is_visible():
-                    self.logger.info("✅ 저장 완료 확인")
-                    return True
+                pdate_visible = iframe.locator("#Pdate").is_visible()
             except:
-                pass
+                pdate_visible = False
             
-            self.logger.info("✅ 저장 버튼 클릭 완료")
+            if pdate_visible:
+                raise Exception("저장 후에도 입력 폼이 닫히지 않음 (저장 실패 가능)")
+            
+            self.logger.info("✅ 저장 후 입력 폼 닫힘")
+            
+            # 제목으로 저장 확인
+            title = str(row_data.get('제목', '')).strip() if '제목' in row_data else ''
+            
+            if title:
+                # body 대기
+                body = iframe.locator("body")
+                body.wait_for(state="visible")
+                
+                # 제목이 나타나는지 확인
+                try:
+                    iframe.get_by_text(title, exact=False).first.wait_for(state="visible", timeout=10000)
+                    self.logger.info("✅ 상담 목록에서 제목 확인됨 (저장 확정)")
+                except:
+                    self.logger.warning("⚠️ 저장은 된 것 같지만, 목록에서 제목 확인 실패 (UI/탭/필터 영향 가능)")
+            
             return True
                 
         except Exception as e:
             self.logger.error(f"❌ 상담 데이터 저장 실패: {str(e)}")
+            
+            # 스크린샷
+            try:
+                timestamp = int(time.time() * 1000)
+                student_id = row_data.get('학번', 'unknown')
+                self.page.screenshot(path=f"fail_{student_id}_{timestamp}.png", full_page=True)
+            except:
+                pass
+            
             return False
     
     def close_profile(self):
@@ -400,7 +446,8 @@ class CandoAutoCounseling:
                         success = False
                         break
                 
-                if success and self.save_counseling_data():
+                # 여기가 핵심! row를 전달
+                if success and self.save_counseling_data(row):  # ← row 추가!
                     result['status'] = 'SUCCESS'
                     success_count += 1
                     print(f"   ✅ 성공: 상담 데이터 입력 및 저장 완료")
