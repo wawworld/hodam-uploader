@@ -171,10 +171,6 @@ pyinstaller --onefile --name hodam_uploader hodam_uploader.py
 
 이 프로젝트는 호서대학교 내부 사용을 목적으로 개발되었습니다.
 
-## 👤 작성자
-
-- 박창훈 교수
-- 호서대학교 게임학과
 
 ## 📞 문의
 
