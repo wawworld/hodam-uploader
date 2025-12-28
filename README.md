@@ -47,35 +47,6 @@
    → 자동 처리 시작
 ```
 
-### 방법 2: Python 소스코드 실행
-
-1. **저장소 클론**
-```bash
-   git clone https://github.com/wawworld/hodam-uploader.git
-   cd hodam-uploader
-```
-
-2. **가상환경 생성 및 활성화**
-```bash
-   python -m venv venv
-   
-   # Windows
-   venv\Scripts\activate
-   
-   # Mac/Linux
-   source venv/bin/activate
-```
-
-3. **패키지 설치**
-```bash
-   pip install -r requirements.txt
-   playwright install chromium
-```
-
-4. **실행**
-```bash
-   python hodam_uploader.py
-```
 
 ## 📊 CSV 파일 형식
 
@@ -118,12 +89,20 @@
 
 ## 🔧 문제 해결
 
+### 프로그램이 시작되지 않음
+**증상**: 더블클릭해도 창이 바로 꺼짐
+
+**해결방법**:
+1. 명령 프롬프트(CMD)에서 실행하여 에러 확인
+2. 관리자 권한으로 실행
+3. 바이러스 백신 예외 처리 추가
+
 ### 브라우저를 찾을 수 없다는 오류
 **증상**: `Executable doesn't exist` 오류
 
 **해결방법**:
 1. Chrome 브라우저를 설치하세요
-2. 또는 명령 프롬프트에서 다음 실행:
+2. 또는 명령 프롬프트에서:
 ```bash
    playwright install chromium
 ```
@@ -135,6 +114,15 @@
 1. 학번이 정확한지 확인
 2. Cando 시스템에 해당 학생이 등록되어 있는지 확인
 3. 지도학생 목록에 포함되어 있는지 확인
+
+### 저장이 실패한다는 오류
+**증상**: "저장 실패" 메시지
+
+**해결방법**:
+1. 필수 입력 항목 확인 (상담일자, 상담내용, 상담분야)
+2. 상담분야 값이 정확한지 확인 (진로, 취업, 학습, 심리 등)
+3. 인터넷 연결 상태 확인
+4. 에러 스크린샷 확인 (`error_학번_날짜시간.png`)
 
 ### CSV 파일 인코딩 오류
 **증상**: 한글이 깨져서 보임
@@ -163,30 +151,6 @@
 - 사용 후 안전하게 삭제하세요
 
 
-## 🛠️ 개발
-
-### 프로젝트 구조
-```
-hodam-uploader/
-├── hodam_uploader.py      # 메인 프로그램
-├── requirements.txt        # Python 패키지 의존성
-├── .github/
-│   └── workflows/
-│       └── build.yml       # GitHub Actions 빌드 설정
-├── .gitignore
-└── README.md
-```
-
-### 빌드 방법
-
-GitHub Actions를 통해 자동으로 Windows EXE 파일이 빌드됩니다.
-
-수동 빌드:
-```bash
-pip install pyinstaller
-pyinstaller --onefile --name hodam_uploader hodam_uploader.py
-```
-
 ## 📝 라이선스
 
 이 프로젝트는 호서대학교 내부 사용을 목적으로 개발되었습니다.
@@ -198,7 +162,15 @@ pyinstaller --onefile --name hodam_uploader hodam_uploader.py
 
 ## 📜 변경 이력
 
-### v1.0.0 (2025-12-28)
+### v1.1.0 (2025-12-29) - 사용자 경험 대폭 개선
+- ✨ 친절한 사용자 입력 안내 추가
+- 📊 실시간 진행률 표시
+- 🔍 단계별 처리 상태 표시
+- 📸 에러 발생 시 자동 스크린샷
+- 📈 개선된 리포트 출력
+- 🔁 재시도 로직 강화
+
+### v1.0.0 (2025-12-28) - 초기 버전
 - 초기 버전 출시
 - CSV 파일 기반 자동 상담 입력
 - 시스템 Chrome 브라우저 지원
