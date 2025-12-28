@@ -1,0 +1,60 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # v1.0.0 같은 태그가 push되면 실행
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Install Playwright browsers
+      run: |
+        playwright install chromium
+    
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      shell: bash
+    
+    - name: Build EXE with PyInstaller
+      run: |
+        pyinstaller --onefile --name hodam_uploader hodam_uploader.py
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/hodam_uploader.exe
+        body: |
+          ## 🎉 호서대학교 Cando 자동 상담 입력 프로그램 ${{ steps.get_version.outputs.VERSION }}
+          
+          ### 📥 다운로드
+          아래 Assets에서 `hodam_uploader.exe` 다운로드
+          
+          ### 📖 사용 방법
+          자세한 내용은 [README](https://github.com/wawworld/hodam-uploader/blob/main/README.md) 참조
+          
+          ### ✨ 주요 기능
+          - CSV 파일 기반 대량 상담 데이터 자동 입력
+          - 브라우저 자동화로 반복 작업 제거
+          - 시스템 Chrome 브라우저 자동 연결
+          - 상세한 처리 결과 리포트 생성
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
