@@ -3,7 +3,11 @@ name: Create Release
 on:
   push:
     tags:
-      - 'v*.*.*'  # v1.0.0 같은 태그가 push되면 실행
+      - 'v*.*.*'
+
+permissions:  # 이 부분 추가!
+  contents: write
+  packages: write
 
 jobs:
   build-and-release:
@@ -58,3 +62,4 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
