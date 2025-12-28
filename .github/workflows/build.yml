@@ -5,7 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # 수동 실행 가능
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,10 +13,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4  # v3 → v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5  # v4 → v5
       with:
         python-version: '3.11'
     
@@ -34,7 +34,7 @@ jobs:
         pyinstaller --onefile --name hodam_uploader hodam_uploader.py
     
     - name: Upload EXE artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # v3 → v4
       with:
         name: hodam_uploader-exe
         path: dist/hodam_uploader.exe
