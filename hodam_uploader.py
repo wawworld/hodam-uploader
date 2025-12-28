@@ -16,6 +16,7 @@ class CandoAutoCounseling:
         """
         self.csv_file_path = csv_file_path
         self.login_url = login_url
+        self.playwright = None  # 추가
         self.browser = None
         self.page = None
         self.results = []
@@ -63,19 +64,55 @@ class CandoAutoCounseling:
             self.logger.error(f"CSV 파일 로드 실패: {str(e)}")
             return False
     
-    def setup_browser(self):
-        """브라우저 설정 및 시작"""
+    def setup_browser(self):  # self 추가!
+        """브라우저 설정 - 시스템 Chrome 우선, 실패시 Playwright Chromium"""
         try:
             self.playwright = sync_playwright().start()
-            self.browser = self.playwright.chromium.launch(headless=False)
-            self.page = self.browser.new_page()
-            self.page.set_default_timeout(15000)
             
+            # 방법 1: 시스템 Chrome 시도
+            try:
+                self.logger.info("시스템 Chrome 브라우저 연결 시도...")
+                self.browser = self.playwright.chromium.launch(
+                    headless=False,
+                    channel="chrome",
+                    args=[
+                        '--start-maximized',
+                        '--disable-blink-features=AutomationControlled'
+                    ]
+                )
+                self.logger.info("✅ 시스템 Chrome 브라우저 사용")
+            except Exception as chrome_error:
+                # 방법 2: Playwright Chromium 사용
+                self.logger.warning(f"시스템 Chrome 연결 실패: {chrome_error}")
+                self.logger.info("Playwright Chromium 브라우저 시도...")
+                
+                try:
+                    self.browser = self.playwright.chromium.launch(
+                        headless=False,
+                        args=['--start-maximized']
+                    )
+                    self.logger.info("✅ Playwright Chromium 브라우저 사용")
+                except Exception as chromium_error:
+                    self.logger.error("Playwright 브라우저도 없습니다.")
+                    raise Exception(
+                        "브라우저를 찾을 수 없습니다.\n"
+                        "1. Chrome 브라우저를 설치하거나\n"
+                        "2. 명령 프롬프트에서 'playwright install chromium' 실행"
+                    )
+            
+            # 컨텍스트 및 페이지 생성
+            context = self.browser.new_context(
+                viewport={'width': 1920, 'height': 1080},
+                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            )
+            
+            self.page = context.new_page()
             self.logger.info("브라우저 설정 완료")
             return True
             
         except Exception as e:
-            self.logger.error(f"브라우저 설정 실패: {str(e)}")
+            self.logger.error(f"브라우저 설정 실패: {e}")
+            self.cleanup()
             return False
     
     def wait_for_login(self):
@@ -441,9 +478,11 @@ class CandoAutoCounseling:
     def cleanup(self):
         """리소스 정리"""
         try:
-            if self.browser:
+            if hasattr(self, 'page') and self.page:
+                self.page.close()
+            if hasattr(self, 'browser') and self.browser:
                 self.browser.close()
-            if self.playwright:
+            if hasattr(self, 'playwright') and self.playwright:
                 self.playwright.stop()
             self.logger.info("브라우저 리소스 정리 완료")
         except Exception as e:
